@@ -1,0 +1,460 @@
+title: crt2-data-api
+version: 1.0.1
+baseUri: http://{host}:{port}/api
+protocols: [HTTP]
+securitySchemes:
+  basic:
+    description: This API supports Basic Authentication.
+    type: Basic Authentication
+mediaType: [ application/json ]
+types:
+  Profile: |
+  {
+    "type": "object",
+    "properties": {
+      "accumulatorValue": {
+        "required": true
+        "type": "boolean",
+        "title": "value"
+        }
+      }
+  }
+  ProfileResponse: |
+  {
+    "type": "object",
+    "properties": {
+      "cid": {
+        "required": true
+        "type": "string",
+        "maxLength": 36,
+        "title": "Unique message identifier."
+      },
+      "result": {
+        "required": false
+        "type": "integer"
+        "length": 1,
+        "title": "The result of operation (0 – success, 1 - unsuccess)."
+      },
+      "msisdn": {
+        "required": false
+        "type": "integer"
+        "length": 9,
+        "title": "The subscriber number."
+      },
+      "sendlockflag": {
+        "required": false
+        "type": "integer"
+        "length": 1,
+        "title": "Ознака блокування на поповнення іншого абонента (0 - ні, 1-абонентська, 2- адміністратором, 3 - системна)."
+      },
+      "rcvdlockflag": {
+        "required": false
+        "type": "integer"
+        "length": 1,
+        "title": "Ознака блокування на приймання поповнення від іншого абонента (0 - ні, 1-абонентська, 2- адміністратором, 3 - системна)."
+      },
+      "failcount": {
+        "required": false
+        "type": "integer"
+        "maxLength": 3,
+        "title": "Кількість невдалих спроб."
+      },
+      "datestartfail": {
+        "required": false
+        "type": "string"
+        "title": "Час блокировки  "
+      }
+    }
+  }
+  Order: |
+  {
+    "type": "object",
+    "properties": {
+      "cid": {
+        "required": true
+        "type": "string",
+        "maxLength": 36,
+        "title": "Unique message identifier."
+      },
+      "msisdnFrom": {
+        "required": true
+        "type": "integer"
+        "length": 9,
+        "title": "The subscriber number."
+      },
+      "msisdnTo": {
+        "required": true
+        "type": "integer"
+        "length": 9,
+        "title": "The subscriber number."
+      },
+      "changeDate": {
+        "required": true
+        "type": "integer"
+        "title": "Order`s change date."
+      },
+      "amount": {
+        "required": true
+        "type": "integer",
+        "maxLength": 5,
+        "minLength": 1,
+        "title": "Amount of money that msisdnFrom wants to send."
+      },
+      "orderstatus": {
+        "required": true
+        "type": "integer",
+        "maxLength": 2,
+        "minLength": 1,
+        "title": "Order`s status."
+      },
+      "errorId": {
+        "required": true
+        "type": "integer",
+        "maxLength": 3,
+        "minLength": 1,
+        "title": "Order`s error id."
+      },
+      "errorReason": {
+        "required": true
+        "type": "string",
+        "maxLength": 150,
+        "minLength": 0,
+        "title": "Order`s error reason."
+      },
+      "reqSr": {
+        "required": true
+        "type": "integer"
+        "length": 1,
+        "title": "the channel;1- ussd, 2 - sms"
+      }
+    }
+  }
+  OrderResponse: |
+  {
+    "type": "object",
+    "properties": {
+      "cid": {
+        "required": true
+        "type": "string",
+        "maxLength": 36,
+        "title": "Unique message identifier."
+      }
+    }
+      "orders": {
+        "title": "Msisdn's orders.",
+        "type": "Order[]"
+      }
+  }
+  Error: |
+  {
+    "type": "object",
+    "properties": {
+      "cid": {
+        "type": "string",
+        "title": "Unique correlation identifier."
+      },
+      "errorId": {
+        "type": "integer",
+        "title": "Unique error identifier."
+      },
+      "errorMsg": {
+        "type": "string",
+        "title": "Error message."
+      }
+    }
+  }
+traits:
+  msisdn:
+    description: the subscriber number
+    type: integer
+    length: 9
+    example: 683728617
+  system:
+    description: "The crt system."
+    type: string
+    enum: [ "crt2", "usc2"]
+    example: "usc2"
+  sendlockflag:
+    description: Ознака блокування переказувати гроші іншому абоненту (0 - ні, 1-абонентська, 2- адміністратором, 3 - системна)
+    type: integer
+    length: 1
+    example: 2
+  rcvdlockflag:
+    description: Ознака блокування приймати гроші від іншого абонента (0 - ні, 1-абонентська, 2- адміністратором, 3 - системна)
+    type: integer
+    length: 1
+    example: 2
+/customers/{msisdn}:
+  put:
+    description: Create customer's profile
+    body:
+        type: Profile
+        example: |
+        { "accumulatorValue": true}
+    responses:
+      200:
+        description: Profile was create or profile exists.
+        body:
+            type: ProfileResponse, Error
+            example: |
+            [
+              {
+                "cid": "d8549def-5d93-4e52-8b63-b282ccefa971"
+              },
+              {
+                "cid": "05c71755-907a-4629-a765-e222e5e9f958",
+                "errorId": 116,
+                "errorText": "Profile already exist."
+              }
+            ]
+      400: Invalid incoming request.
+      401:
+        description: Login and password is not present or incorrect in request.
+        body:
+            "type": "string"
+      403:
+        description: Invalid permission.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "35ad512e-db0b-4f9e-a3de-f27e54f25a40",
+              "errorId": 102,
+              "errorMsg": "user doesn't have permission to this resource."
+            }
+      500:
+        description: Some kind of integration system are unavailable.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "c383d31a-92d0-481d-abfb-5ac9f8f480c9",
+              "errorId": 109,
+              "errorMsg": "Invalid parameter received with db."
+            }
+  delete:
+    description: Delete customer's profile
+    responses:
+      200:
+        description: Profile was delete.
+        body:
+            type: ProfileResponse
+            example: |
+            {
+              "cid": "d8549def-5d93-4e52-8b63-b282ccefa971"
+            }
+      400: Invalid incoming request.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "05c71755-907a-4629-a765-e222e5e9f958",
+              "errorId": 116,
+              "errorText": "Profile not exists."
+            }
+      401:
+        description: Login and password is not present or incorrect in request.
+        body:
+            "type": "string"
+      403:
+        description: Invalid permission.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "35ad512e-db0b-4f9e-a3de-f27e54f25a40",
+              "errorId": 102,
+              "errorMsg": "User doesn't have permission to this resource."
+            }
+      500:
+        description: Some kind of integration system are unavailable.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "c383d31a-92d0-481d-abfb-5ac9f8f480c9",
+              "errorId": 101,
+              "errorMsg": "Internal error."
+            }
+/{system}/lock/{msisdn}:
+  get:
+    description: Перевірка блокування на послугу поповнення
+    responses:
+      200:
+        body:
+            type: ProfileResponse
+            example: |
+            {
+              "cid": "d8549def-5d93-4e52-8b63-b282ccefa971",
+              "msisdn": 683728617,
+              "sendlockflag": 0,
+              "rcvdlockflag": 0,
+              "failcount": 3,
+              "datestartfail": "2019-06-26T13:58:34"
+            },
+            {
+              "cid": "d8549def-5d93-4e52-8b63-b282ccefa971",
+              "msisdn": 683728617,
+              "sendlockflag": 0,
+              "rcvdlockflag": 0
+            },
+      400: Invalid incoming request.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "05c71755-907a-4629-a765-e222e5e9f958",
+              "errorId": 105,
+              "errorText": "Invalid incoming msisdn."
+            }
+      401:
+        description: Login and password is not present or incorrect in request.
+        body:
+            "type": "string"
+      403:
+        description: Invalid permission.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "35ad512e-db0b-4f9e-a3de-f27e54f25a40",
+              "errorId": 102,
+              "errorMsg": "User doesn't have permission to this resource."
+            }
+      500:
+        description: Some kind of integration system are unavailable.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "c383d31a-92d0-481d-abfb-5ac9f8f480c9",
+              "errorId": 101,
+              "errorMsg": "Internal error."
+            }
+  put:
+    description: Блокування/разблокування послуги
+    queryParameters:
+      sendlockflag:
+      rcvdlockflag:
+    responses:
+      200:
+        body:
+            type: ProfileResponse
+            example: |
+            {
+              "cid": "d8549def-5d93-4e52-8b63-b282ccefa971",
+              "result": 0
+            }
+      400: Invalid incoming request.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "05c71755-907a-4629-a765-e222e5e9f958",
+              "errorId": 105,
+              "errorText": "Invalid incoming msisdn."
+            }
+      401:
+        description: Login and password is not present or incorrect in request.
+        body:
+            "type": "string"
+      403:
+        description: Invalid permission.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "35ad512e-db0b-4f9e-a3de-f27e54f25a40",
+              "errorId": 102,
+              "errorMsg": "User doesn't have permission to this resource."
+            }
+      500:
+        description: Some kind of integration system are unavailable.
+        body:
+            type: Error
+            example: |
+            {
+              "cid": "c383d31a-92d0-481d-abfb-5ac9f8f480c9",
+              "errorId": 101,
+              "errorMsg": "Internal error."
+            }
+/{system}/orders:
+  get:
+    description: Get orders by msisdn.
+    queryParameters:
+      msisdn:
+        description: "msisdn that sends order"
+        type: integer
+        required: true
+        example: 670000081
+      msisdnTo:
+        description: "msisdn that takes order"
+        type: integer
+        required: false
+        example: 670000081
+      from:
+        description: "The date in ISO 8601 from which the search will be performed. trunc(sysdate) - 1 by default."
+        type: string
+        required: false
+        example: "2019-06-26T15:08:30"
+      to:
+        description: "The date in ISO 8601 until which the search will be performed. sysdate by default."
+        type: string
+        required: false
+        example: "2019-06-26T15:08:29"
+    responses:
+      200:
+        body:
+          type: OrderResponse
+          example: |
+          {
+            "cid": "cadf8252-4d71-41db-8316-b83d10ee700a",
+            "orders": [
+              {
+                "cid": "e8689ed0-1e05-4025-8b6a-dd0673679284",
+                "msisdnFrom": 970000000,
+                "msisdnTo": 960000000,
+                "changeDate": 1518799700000,
+                "amount": 50,
+                "orderstatus": 2,
+                "errorId": 0,
+                "errorReason": "",
+                "reqSr": 1,
+              },
+              {
+                "cid": "e8689ed0-1e05-4025-8b6a-dd0673679285",
+                "msisdnFrom": 980000000,
+                "msisdnTo": 960000001,
+                "changeDate": 1518799700012,
+                "amount": 50,
+                "orderstatus": 9,
+                "errorId": 0,
+                "errorReason": "",
+                "reqSr": 1,
+              }
+            ]
+          }
+      400:
+        description: Invalid request.
+        body:
+          type: Error
+          example: |
+          {
+            "cid": "43786089-c15a-4fac-97d8-9328e555d625",
+            "errorId": 19,
+            "errorMsg": "invalid destination address"
+          }
+      401:
+        description: Login and password is not present or incorrect in request.
+      403:
+        description: Ip adress not allowed for this login.
+      500:
+        description: Server error
+        body:
+          type: Error
+          example: |
+          {
+            "cid": "c383d31a-92d0-481d-abfb-5ac9f8f480c9",
+            "errorId": 99,
+            "errorMsg": "Internal error"
+          }
